@@ -4,21 +4,21 @@ import { useAuth } from '../utils/AuthContext';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { user, loginUser } = useAuth();
+    const { user, loginUser, loading } = useAuth();
     const loginForm = useRef(null);
 
     useEffect(() => {
-        if (user) { 
+        if (!loading && user) {
             navigate('/');
         }
-    }, [user, navigate]);
-    
+    }, [user, loading, navigate]);
+
     const handleSubmit = (e) => {
         e.preventDefault();
         const email = loginForm.current.email.value;
         const password = loginForm.current.password.value;
 
-        const userInfo = { email, password }; 
+        const userInfo = { email, password };
         console.log("Submitted User Info: ", userInfo);
         loginUser(userInfo);
     };

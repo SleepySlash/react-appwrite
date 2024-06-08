@@ -1,61 +1,76 @@
-import React from 'react'
+import React, { useContext, useState, useEffect, createContext } from 'react';
 import { account } from '../appwriteConfig';
-import { useContext, useState, useEffect, createContext } from 'react'
+import { ID } from 'appwrite'; // helps create a unique id for each user, provided by appwrite
+
 const AuthContext = createContext();
 
-export const AuthProvider = ({children}) =>{
-
+export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(()=>{
+    useEffect(() => {
         checkUserStatus();
-    },[])
+    }, []);
 
-    const loginUser = async (userInfo)=> {
+    const loginUser = async (userInfo) => {
         setLoading(true);
-        try{
-            let response = await account.createEmailPasswordSession( userInfo.email, userInfo.password);
-            let accountDetails = await account.get();
-            console.log("accountDetails",accountDetails);
+        try {
+            await account.createEmailPasswordSession(userInfo.email, userInfo.password);
+            const accountDetails = await account.get();
             setUser(accountDetails);
-        }catch(error){
+        } catch (error) {
             console.error(error);
         }
         setLoading(false);
     };
 
-    const logoutUser =()=> {
-        account.deleteSession('current');
-        setUser(null);
-    }
-    
-    const registerUser =(userInfo)=> {}
+    const logoutUser = async () => {
+        try {
+            await account.deleteSession('current');
+            setUser(null);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
-    const checkUserStatus = async() => {
+    const registerUser = async (userInfo) => {
         setLoading(true);
-        try{
-            let accountDetails = account.get();
+        try {
+            await account.create(ID.unique(), userInfo.email, userInfo.password1, userInfo.name);
+            await account.createEmailPasswordSession(userInfo.email, userInfo.password1);
+            const accountDetails = await account.get();
             setUser(accountDetails);
-        }catch(error){
-            console.log(error);
+        } catch (error) {
+            console.error("error while reg", error);
         }
         setLoading(false);
-    }
+    };
+
+    const checkUserStatus = async () => {
+        setLoading(true);
+        try {
+            const accountDetails = await account.get();
+            setUser(accountDetails);
+        } catch (error) {
+            console.error(error);
+            setUser(null);
+        }
+        setLoading(false);
+    };
 
     const contextData = {
         user,
         loginUser,
         logoutUser,
         registerUser,
-    }
+    };
 
     return (
         <AuthContext.Provider value={contextData}>
-            {loading? <p>Loading...</p> : children}
+            {loading ? <p>Loading...</p> : children}
         </AuthContext.Provider>
-    )
-}
+    );
+};
 
-export const useAuth = ()=> {return useContext(AuthContext)}
-export default AuthContext
+export const useAuth = () => useContext(AuthContext);
+export default AuthContext;
